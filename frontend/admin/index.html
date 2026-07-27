@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Attendance Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #050810;
+  --surface: #0d1117;
+  --surface2: #161b27;
+  --surface3: #1c2333;
+  --border: rgba(48, 54, 77, 0.8);
+  --border-bright: rgba(99, 179, 237, 0.2);
+  --accent: #60a5fa;
+  --accent2: #22d3a5;
+  --accent3: #a78bfa;
+  --orange: #f97316;
+  --red: #ef4444;
+  --green: #22c55e;
+  --text: #e2e8f0;
+  --muted: #4b5563;
+  --muted2: #64748b;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --title: 'Syne', sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+}
+
+.logo-name {
+  font-family: var(--title);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.logo-name span { display: block; font-size: 0.65rem; color: var(--muted2); font-weight: 400; font-family: var(--font); }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted2);
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(96,165,250,0.1); color: var(--accent); border-color: rgba(96,165,250,0.2); }
+.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-section {
+  font-family: var(--title);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem 0.25rem;
+  margin-top: 0.5rem;
+}
+
+/* MAIN */
+.main {
+  margin-left: 220px;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-family: var(--title);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.date-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.date-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.date-input:focus { outline: none; border-color: var(--accent); }
+
+.btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--title);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #93c5fd; }
+.btn-ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--border-bright); }
+.btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+.btn-success-sm { background: rgba(34,211,165,0.15); border: 1px solid rgba(34,211,165,0.3); color: var(--accent2); font-size: 0.75rem; padding: 0.3rem 0.75rem; }
+
+/* STATS CARDS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--card-accent, var(--accent));
+}
+
+.stat-card:hover { border-color: var(--border-bright); }
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--title);
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-family: var(--title);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--card-accent, var(--accent));
+  line-height: 1;
+}
+
+.stat-sub { font-size: 0.75rem; color: var(--muted2); margin-top: 0.4rem; }
+
+/* MAIN TABLE */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-family: var(--title);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.search-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  width: 200px;
+}
+
+.search-input:focus { outline: none; border-color: var(--border-bright); }
+.search-input::placeholder { color: var(--muted2); }
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface2); }
+th {
+  text-align: left;
+  padding: 0.75rem 1.25rem;
+  font-family: var(--title);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.015); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.badge-present { background: rgba(34,211,165,0.1); color: var(--accent2); border-color: rgba(34,211,165,0.25); }
+.badge-absent { background: rgba(239,68,68,0.08); color: var(--red); border-color: rgba(239,68,68,0.2); }
+.badge-partial { background: rgba(249,115,22,0.1); color: var(--orange); border-color: rgba(249,115,22,0.25); }
+.badge-flagged { background: rgba(239,68,68,0.12); color: var(--red); border-color: rgba(239,68,68,0.3); }
+.badge-ok { background: rgba(34,211,165,0.1); color: var(--accent2); border-color: rgba(34,211,165,0.25); }
+
+.mono { font-family: var(--mono); font-size: 0.8rem; color: var(--muted2); }
+
+/* PANELS */
+.panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.panel-title {
+  font-family: var(--title);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group { margin-bottom: 1rem; }
+.form-label { font-size: 0.8rem; color: var(--muted2); margin-bottom: 0.4rem; display: block; }
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+}
+.form-input:focus { outline: none; border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+/* Loading overlay */
+.loading-row td { text-align: center; color: var(--muted2); padding: 3rem; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2rem; right: 2rem;
+  background: var(--surface2);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 300px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: rgba(34,211,165,0.4); color: var(--accent2); }
+.toast.error { border-color: rgba(239,68,68,0.4); color: var(--red); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* WA test panel */
+.wa-panel {
+  background: linear-gradient(135deg, rgba(34,211,165,0.05), rgba(96,165,250,0.05));
+  border: 1px solid rgba(34,211,165,0.2);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.wa-title { font-family: var(--title); font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--accent2); }
+.wa-sub { font-size: 0.8rem; color: var(--muted2); margin-bottom: 1rem; }
+
+.wa-row { display: flex; gap: 0.75rem; align-items: center; }
+.wa-input { flex: 1; }
+.wa-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+
+.link-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  display: none;
+  font-size: 0.8rem;
+}
+
+.link-url {
+  font-family: var(--mono);
+  color: var(--accent);
+  word-break: break-all;
+  font-size: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+/* Tags */
+.dept-tag {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  color: var(--muted2);
+}
+
+.duration-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--accent3);
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">⚡</div>
+    <div class="logo-name">
+      SmartAttend
+      <span>Admin Panel</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Overview</div>
+  <a class="nav-item active" href="#" onclick="showSection('dashboard')">
+    <span class="nav-icon">📊</span> Dashboard
+  </a>
+  <a class="nav-item" href="#" onclick="showSection('logs')">
+    <span class="nav-icon">📋</span> Attendance Logs
+  </a>
+
+  <div class="sidebar-section">Manage</div>
+  <a class="nav-item" href="#" onclick="showSection('employees')">
+    <span class="nav-icon">👥</span> Employees
+  </a>
+  <a class="nav-item" href="#" onclick="showSection('settings')">
+    <span class="nav-icon">⚙️</span> Office Settings
+  </a>
+
+  <div class="sidebar-section">Tools</div>
+  <a class="nav-item" href="#" onclick="showSection('test')">
+    <span class="nav-icon">🧪</span> Test Simulator
+  </a>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD SECTION -->
+  <div id="section-dashboard">
+    <div class="topbar">
+      <div>
+        <div class="page-title">📊 Dashboard</div>
+      </div>
+      <div class="date-picker-row">
+        <input type="date" class="date-input" id="dash-date" />
+        <button class="btn btn-primary" onclick="loadDashboard()">Load</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card" style="--card-accent:var(--accent)">
+        <div class="stat-label">Total Employees</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub">Registered &amp; active</div>
+      </div>
+      <div class="stat-card" style="--card-accent:var(--accent2)">
+        <div class="stat-label">Present Today</div>
+        <div class="stat-value" id="stat-present">—</div>
+        <div class="stat-sub">Marked check-in</div>
+      </div>
+      <div class="stat-card" style="--card-accent:var(--red)">
+        <div class="stat-label">Absent</div>
+        <div class="stat-value" id="stat-absent">—</div>
+        <div class="stat-sub">No check-in yet</div>
+      </div>
+      <div class="stat-card" style="--card-accent:var(--accent3)">
+        <div class="stat-label">Checked Out</div>
+        <div class="stat-value" id="stat-out">—</div>
+        <div class="stat-sub">Completed day</div>
+      </div>
+      <div class="stat-card" style="--card-accent:var(--orange)">
+        <div class="stat-label">🚩 Flagged</div>
+        <div class="stat-value" id="stat-flagged">—</div>
+        <div class="stat-sub">Outside geofence</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Today's Attendance</div>
+      <input type="text" class="search-input" placeholder="🔍 Search employee…" oninput="filterTable(this.value)" />
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Geofence</th>
+          </tr>
+        </thead>
+        <tbody id="summary-table">
+          <tr class="loading-row"><td colspan="7">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LOGS SECTION -->
+  <div id="section-logs" style="display:none">
+    <div class="topbar">
+      <div class="page-title">📋 Attendance Logs</div>
+      <div class="date-picker-row">
+        <input type="date" class="date-input" id="log-date" />
+        <button class="btn btn-primary" onclick="loadLogs()">Filter</button>
+        <button class="btn btn-ghost" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Employee</th>
+            <th>Action</th>
+            <th>Department</th>
+            <th>GPS</th>
+            <th>Geofence</th>
+            <th>IP Address</th>
+          </tr>
+        </thead>
+        <tbody id="logs-table">
+          <tr class="loading-row"><td colspan="7">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EMPLOYEES SECTION -->
+  <div id="section-employees" style="display:none">
+    <div class="topbar">
+      <div class="page-title">👥 Employees</div>
+    </div>
+
+    <div class="panels-grid">
+      <div class="panel">
+        <div class="panel-title">➕ Add Employee</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="emp-name" placeholder="e.g. Priya Patel" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Employee ID</label>
+            <input class="form-input" id="emp-id" placeholder="e.g. EMP004" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">WhatsApp Number (with country code)</label>
+            <input class="form-input" id="emp-phone" placeholder="919876543213" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input class="form-input" id="emp-dept" placeholder="e.g. Engineering" />
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="addEmployee()">Add Employee</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">📊 Quick Stats</div>
+        <p style="color:var(--muted2);font-size:0.875rem;line-height:1.7">
+          Total registered employees are shown in the dashboard.<br><br>
+          Employees registered with their WhatsApp number will automatically receive attendance links when they message the system.<br><br>
+          <strong style="color:var(--text)">Phone format:</strong> Country code + number, no spaces or + (e.g. 919876543210 for India).
+        </p>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">All Employees</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Joined</th>
+          </tr>
+        </thead>
+        <tbody id="emp-table">
+          <tr class="loading-row"><td colspan="6">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SETTINGS SECTION -->
+  <div id="section-settings" style="display:none">
+    <div class="topbar">
+      <div class="page-title">⚙️ Office Location Settings</div>
+    </div>
+
+    <div class="panels-grid">
+      <div class="panel">
+        <div class="panel-title">📍 Office Geofence</div>
+        <div class="form-group">
+          <label class="form-label">Office Name</label>
+          <input class="form-input" id="office-name" placeholder="Main Office" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Latitude</label>
+            <input class="form-input" id="office-lat" placeholder="12.9716" type="number" step="0.000001" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Longitude</label>
+            <input class="form-input" id="office-lng" placeholder="77.5946" type="number" step="0.000001" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allowed Radius (meters)</label>
+          <input class="form-input" id="office-radius" placeholder="200" type="number" min="50" max="5000" />
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+          <button class="btn btn-primary" style="flex:1" onclick="saveOffice()">💾 Save Location</button>
+          <button class="btn btn-ghost" onclick="useCurrentLocation()">📍 Use My Location</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">🌐 n8n Integration</div>
+        <div style="font-size:0.875rem;color:var(--muted2);line-height:1.8">
+          <div style="margin-bottom:1rem">
+            <strong style="color:var(--text)">Webhook Endpoint:</strong><br/>
+            <span class="link-url" id="webhook-url" style="display:block;margin-top:0.25rem"></span>
+          </div>
+          <div style="margin-bottom:1rem">
+            <strong style="color:var(--text)">n8n Workflow:</strong><br/>
+            Download the workflow JSON from the project folder and import it into your n8n instance.
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:0.8rem">
+            <strong style="color:var(--accent2)">Quick Setup:</strong><br/>
+            1. Import <code>n8n/attendance-workflow.json</code> into n8n<br/>
+            2. Set WEBHOOK_URL environment variable<br/>
+            3. Connect WhatsApp Cloud API credentials<br/>
+            4. Activate the workflow
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEST SIMULATOR -->
+  <div id="section-test" style="display:none">
+    <div class="topbar">
+      <div class="page-title">🧪 WhatsApp Simulator</div>
+    </div>
+
+    <div class="wa-panel">
+      <div class="wa-title">📱 Simulate WhatsApp Message</div>
+      <div class="wa-sub">Test the system without a real WhatsApp number. Enter a registered phone and trigger check-in/out.</div>
+      <div class="wa-row">
+        <input class="form-input wa-input" id="sim-phone" placeholder="Phone number (e.g. 919876543210)" />
+        <select class="wa-select" id="sim-action">
+          <option value="check in">Check In</option>
+          <option value="check out">Check Out</option>
+        </select>
+        <button class="btn btn-primary" onclick="simulate()">Send →</button>
+      </div>
+      <div class="link-box" id="sim-result">
+        <div id="sim-reply" style="color:var(--muted2);white-space:pre-line;line-height:1.6"></div>
+        <div class="link-url" id="sim-link"></div>
+        <a id="sim-link-btn" href="#" target="_blank" class="btn btn-success-sm" style="display:none;margin-top:0.5rem">🔗 Open Check-in Page →</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">📖 How to Use</div>
+      <div style="font-size:0.875rem;color:var(--muted2);line-height:2">
+        <strong style="color:var(--text)">1. Real WhatsApp:</strong> Import the n8n workflow → connect WhatsApp Cloud API → employees message the number.<br/>
+        <strong style="color:var(--text)">2. Simulator:</strong> Use the form above to generate a check-in link for any registered phone number.<br/>
+        <strong style="color:var(--text)">3. Check-in Page:</strong> The generated link opens the GPS + selfie capture page that records attendance.<br/>
+        <strong style="color:var(--text)">4. Monitoring:</strong> View all records in real-time on the Dashboard and Logs tabs.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+
+// ─── SECTION ROUTING ───
+function showSection(name) {
+  document.querySelectorAll('[id^="section-"]').forEach(el => el.style.display = 'none');
+  document.getElementById(`section-${name}`).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event?.target?.closest('.nav-item')?.classList.add('active');
+
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'logs') loadLogs();
+  if (name === 'employees') loadEmployees();
+  if (name === 'settings') loadSettings();
+}
+
+// ─── TOAST ───
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── DASHBOARD ───
+async function loadDashboard() {
+  const dateEl = document.getElementById('dash-date');
+  if (!dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+  const date = dateEl.value;
+
+  try {
+    const res = await fetch(`${API}/api/admin/summary?date=${date}`);
+    const data = await res.json();
+    const { stats, employees } = data;
+
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-present').textContent = stats.present;
+    document.getElementById('stat-absent').textContent = stats.absent;
+    document.getElementById('stat-out').textContent = stats.checkedOut;
+    document.getElementById('stat-flagged').textContent = stats.flagged;
+
+    const tbody = document.getElementById('summary-table');
+    if (!employees.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No employees found.</td></tr>'; return; }
+
+    tbody.innerHTML = employees.map(e => {
+      const ci = e.check_in ? new Date(e.check_in).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '—';
+      const co = e.check_out ? new Date(e.check_out).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '—';
+      let duration = '—';
+      if (e.check_in && e.check_out) {
+        const mins = Math.round((new Date(e.check_out) - new Date(e.check_in)) / 60000);
+        duration = `${Math.floor(mins/60)}h ${mins%60}m`;
+      }
+      const status = !e.check_in ? `<span class="badge badge-absent">⬜ Absent</span>`
+        : !e.check_out ? `<span class="badge badge-partial">🟡 Working</span>`
+        : `<span class="badge badge-present">✅ Done</span>`;
+      const geo = e.flagged ? `<span class="badge badge-flagged">🚩 Flagged</span>` :
+        e.check_in ? `<span class="badge badge-ok">✓ OK</span>` : '—';
+      const dur = duration !== '—' ? `<span class="duration-pill">${duration}</span>` : '—';
+      return `<tr>
+        <td><strong>${e.name}</strong><br/><span class="mono">${e.employee_id}</span></td>
+        <td><span class="dept-tag">${e.department || '—'}</span></td>
+        <td class="mono">${ci}</td>
+        <td class="mono">${co}</td>
+        <td>${dur}</td>
+        <td>${status}</td>
+        <td>${geo}</td>
+      </tr>`;
+    }).join('');
+
+    window._summaryData = employees;
+  } catch (e) {
+    toast('Failed to load dashboard: ' + e.message, 'error');
+  }
+}
+
+function filterTable(q) {
+  if (!window._summaryData) return;
+  const data = window._summaryData.filter(e => e.name.toLowerCase().includes(q.toLowerCase()) || e.employee_id.toLowerCase().includes(q.toLowerCase()));
+  // Re-render with filter — simple approach
+}
+
+// ─── LOGS ───
+async function loadLogs() {
+  const dateEl = document.getElementById('log-date');
+  if (!dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+
+  try {
+    const res = await fetch(`${API}/api/admin/attendance?date=${dateEl.value}`);
+    const rows = await res.json();
+    const tbody = document.getElementById('logs-table');
+
+    if (!rows.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No records for this date.</td></tr>'; return; }
+
+    tbody.innerHTML = rows.map(r => {
+      const t = new Date(r.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const action = r.action === 'in'
+        ? '<span class="badge badge-present">✅ IN</span>'
+        : '<span class="badge badge-partial">🚪 OUT</span>';
+      const geo = r.within_geofence === true ? '<span class="badge badge-ok">✓ Inside</span>'
+        : r.within_geofence === false ? '<span class="badge badge-flagged">🚩 Outside</span>'
+        : '<span style="color:var(--muted2)">—</span>';
+      const gps = r.latitude ? `${parseFloat(r.latitude).toFixed(4)}, ${parseFloat(r.longitude).toFixed(4)}` : '—';
+      return `<tr>
+        <td class="mono">${t}</td>
+        <td><strong>${r.name}</strong><br/><span class="mono">${r.employee_id}</span></td>
+        <td>${action}</td>
+        <td><span class="dept-tag">${r.department || '—'}</span></td>
+        <td class="mono" style="font-size:0.75rem">${gps}</td>
+        <td>${geo}</td>
+        <td class="mono" style="font-size:0.75rem">${r.ip_address || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    window._logsData = rows;
+  } catch (e) {
+    toast('Failed to load logs: ' + e.message, 'error');
+  }
+}
+
+function exportCSV() {
+  if (!window._logsData?.length) return toast('No data to export', 'error');
+  const headers = ['Time', 'Name', 'Employee ID', 'Action', 'Department', 'Latitude', 'Longitude', 'Geofence', 'IP'];
+  const rows = window._logsData.map(r => [
+    new Date(r.timestamp).toISOString(), r.name, r.employee_id, r.action,
+    r.department, r.latitude, r.longitude, r.within_geofence, r.ip_address
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attendance-${document.getElementById('log-date').value}.csv`;
+  a.click();
+  toast('CSV downloaded!');
+}
+
+// ─── EMPLOYEES ───
+async function loadEmployees() {
+  try {
+    const res = await fetch(`${API}/api/admin/employees`);
+    const emps = await res.json();
+    const tbody = document.getElementById('emp-table');
+    tbody.innerHTML = emps.map(e => `<tr>
+      <td class="mono">${e.employee_id}</td>
+      <td><strong>${e.name}</strong></td>
+      <td><span class="dept-tag">${e.department || '—'}</span></td>
+      <td class="mono">${e.phone}</td>
+      <td><span class="badge ${e.active ? 'badge-present' : 'badge-absent'}">${e.active ? '✓ Active' : '✗ Inactive'}</span></td>
+      <td class="mono" style="font-size:0.8rem">${new Date(e.created_at).toLocaleDateString('en-IN')}</td>
+    </tr>`).join('');
+  } catch (e) {
+    toast('Failed to load employees', 'error');
+  }
+}
+
+async function addEmployee() {
+  const body = {
+    name: document.getElementById('emp-name').value.trim(),
+    employee_id: document.getElementById('emp-id').value.trim(),
+    phone: document.getElementById('emp-phone').value.trim(),
+    department: document.getElementById('emp-dept').value.trim()
+  };
+  if (!body.name || !body.employee_id || !body.phone) return toast('Name, ID and Phone are required', 'error');
+
+  try {
+    const res = await fetch(`${API}/api/admin/employees`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast(`✅ ${data.name} added!`);
+    ['emp-name','emp-id','emp-phone','emp-dept'].forEach(id => document.getElementById(id).value = '');
+    loadEmployees();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ─── SETTINGS ───
+async function loadSettings() {
+  try {
+    const res = await fetch(`${API}/api/admin/office`);
+    const office = await res.json();
+    if (office) {
+      document.getElementById('office-name').value = office.name || '';
+      document.getElementById('office-lat').value = office.latitude || '';
+      document.getElementById('office-lng').value = office.longitude || '';
+      document.getElementById('office-radius').value = office.radius_meters || 200;
+    }
+    document.getElementById('webhook-url').textContent = `${window.location.origin}/api/whatsapp/webhook`;
+  } catch (e) {}
+}
+
+async function saveOffice() {
+  const body = {
+    name: document.getElementById('office-name').value,
+    latitude: parseFloat(document.getElementById('office-lat').value),
+    longitude: parseFloat(document.getElementById('office-lng').value),
+    radius_meters: parseInt(document.getElementById('office-radius').value)
+  };
+  if (!body.latitude || !body.longitude) return toast('Latitude and Longitude required', 'error');
+  try {
+    const res = await fetch(`${API}/api/admin/office`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast('✅ Office location saved!');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function useCurrentLocation() {
+  if (!navigator.geolocation) return toast('Geolocation not supported', 'error');
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('office-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('office-lng').value = pos.coords.longitude.toFixed(6);
+    toast('📍 Location captured!');
+  }, () => toast('Could not get location', 'error'), {enableHighAccuracy:true});
+}
+
+// ─── SIMULATOR ───
+async function simulate() {
+  const phone = document.getElementById('sim-phone').value.trim();
+  const message = document.getElementById('sim-action').value;
+  if (!phone) return toast('Enter a phone number', 'error');
+
+  try {
+    const res = await fetch(`${API}/api/whatsapp/webhook`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ phone, message })
+    });
+    const data = await res.json();
+    const box = document.getElementById('sim-result');
+    const replyEl = document.getElementById('sim-reply');
+    const linkEl = document.getElementById('sim-link');
+    const linkBtn = document.getElementById('sim-link-btn');
+
+    box.style.display = 'block';
+    replyEl.textContent = data.reply || data.error || 'No response';
+
+    // Extract URL from reply
+    const urlMatch = data.reply?.match(/https?:\/\/\S+/);
+    if (urlMatch) {
+      linkEl.textContent = urlMatch[0];
+      linkBtn.href = urlMatch[0];
+      linkBtn.style.display = 'inline-flex';
+    } else {
+      linkEl.textContent = '';
+      linkBtn.style.display = 'none';
+    }
+
+    toast(data.employee ? `✅ Link generated for ${data.employee}` : '📩 Response generated');
+  } catch (e) {
+    toast('Simulation failed: ' + e.message, 'error');
+  }
+}
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dash-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+  loadDashboard();
+});
+</script>
+</body>
+</html>

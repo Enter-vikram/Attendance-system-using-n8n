@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(99, 179, 237, 0.15);
+    --accent-in: #22d3a5;
+    --accent-out: #f97316;
+    --accent-blue: #60a5fa;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --danger: #ef4444;
+    --success: #22c55e;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(34, 211, 165, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(96, 165, 250, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 50%);
+    pointer-events: none;
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse {
+    0% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+
+  /* Grid lines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99, 179, 237, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 179, 237, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .card {
+    position: relative;
+    z-index: 10;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+    animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-in), var(--accent-blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(34, 211, 165, 0.3);
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Loading state */
+  #state-loading {
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent-in);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1.5rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error state */
+  #state-error {
+    text-align: center;
+    padding: 1rem 0;
+    display: none;
+  }
+
+  .error-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  /* Main form state */
+  #state-form { display: none; }
+
+  .greeting {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    line-height: 1.2;
+  }
+
+  .greeting span {
+    background: linear-gradient(90deg, var(--accent-in), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Action badge */
+  .action-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    border: 1px solid;
+  }
+
+  .action-badge.in {
+    background: rgba(34, 211, 165, 0.1);
+    color: var(--accent-in);
+    border-color: rgba(34, 211, 165, 0.3);
+  }
+
+  .action-badge.out {
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--accent-out);
+    border-color: rgba(249, 115, 22, 0.3);
+  }
+
+  /* Info rows */
+  .info-grid {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.875rem;
+  }
+
+  .info-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .info-label { color: var(--muted); font-size: 0.75rem; }
+  .info-value { font-weight: 500; }
+
+  /* Steps */
+  .steps {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    transition: all 0.3s;
+  }
+
+  .step.active {
+    border-color: var(--accent-in);
+    background: rgba(34, 211, 165, 0.05);
+  }
+
+  .step.done {
+    border-color: rgba(34, 211, 165, 0.2);
+    background: rgba(34, 211, 165, 0.03);
+    opacity: 0.7;
+  }
+
+  .step-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .step.active .step-dot {
+    border-color: var(--accent-in);
+    color: var(--accent-in);
+    box-shadow: 0 0 12px rgba(34, 211, 165, 0.3);
+  }
+
+  .step.done .step-dot {
+    background: var(--accent-in);
+    border-color: var(--accent-in);
+    color: #000;
+  }
+
+  /* Selfie section */
+  .selfie-section {
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  .selfie-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .optional-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  #camera-container {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #video { width: 100%; height: 100%; object-fit: cover; display: none; }
+  #canvas { display: none; }
+  #selfie-preview { width: 100%; height: 100%; object-fit: cover; display: none; border-radius: 12px; }
+
+  .camera-placeholder {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .camera-placeholder .cam-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+  .cam-btns {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+
+  .btn:hover::after { background: rgba(255,255,255,0.05); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary-in {
+    background: linear-gradient(135deg, var(--accent-in), #0891b2);
+    color: #000;
+    box-shadow: 0 8px 25px rgba(34, 211, 165, 0.3);
+  }
+
+  .btn-primary-out {
+    background: linear-gradient(135deg, var(--accent-out), #dc2626);
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+  }
+
+  .btn-sm {
+    flex: 1;
+    padding: 0.6rem;
+    font-size: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+  }
+
+  /* Location status */
+  .location-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid;
+    transition: all 0.3s;
+  }
+
+  .location-status.pending { background: rgba(99,179,237,0.05); border-color: var(--border); color: var(--muted); }
+  .location-status.success { background: rgba(34, 211, 165, 0.08); border-color: rgba(34, 211, 165, 0.3); color: var(--accent-in); }
+  .location-status.error { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+
+  .loc-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+  }
+
+  .loc-dot.pulse { animation: locPulse 1.5s ease-in-out infinite; }
+  @keyframes locPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Success state */
+  #state-success {
+    display: none;
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .success-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-in);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: 0 0 30px rgba(34, 211, 165, 0.4);
+  }
+
+  @keyframes successPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .success-detail {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .time-display {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--accent-in), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.25rem;
+  }
+
+  .date-display {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .geofence-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid;
+  }
+
+  .geofence-pill.ok { background: rgba(34,211,165,0.1); color: var(--accent-in); border-color: rgba(34,211,165,0.3); }
+  .geofence-pill.warn { background: rgba(249,115,22,0.1); color: var(--accent-out); border-color: rgba(249,115,22,0.3); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  p { line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Smart Attendance</div>
+  </div>
+
+  <!-- Loading -->
+  <div id="state-loading">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:0.9rem">Verifying your link…</p>
+  </div>
+
+  <!-- Error -->
+  <div id="state-error">
+    <span class="error-icon">🔐</span>
+    <h2 style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:0.75rem">Link Invalid</h2>
+    <p style="color:var(--muted);font-size:0.875rem;line-height:1.6" id="error-msg">This link is invalid or has expired.</p>
+    <div class="divider"></div>
+    <p style="color:var(--muted);font-size:0.8rem">Send <strong style="color:var(--text)">"Check In"</strong> or <strong style="color:var(--text)">"Check Out"</strong> on WhatsApp to get a fresh link.</p>
+  </div>
+
+  <!-- Form -->
+  <div id="state-form">
+    <h1 class="greeting">Hello, <span id="emp-name">Employee</span>!</h1>
+    <p class="subtitle" id="emp-detail">Loading details…</p>
+
+    <div class="action-badge" id="action-badge">
+      <span id="action-icon">✅</span>
+      <span id="action-label">Check In</span>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-icon">🪪</div>
+        <div>
+          <div class="info-label">Employee ID</div>
+          <div class="info-value" id="display-id">—</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">🕐</div>
+        <div>
+          <div class="info-label">Current Time</div>
+          <div class="info-value" id="live-time">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step active" id="step-loc">
+        <div class="step-dot">1</div>
+        <div>
+          <div style="font-weight:500;font-size:0.875rem">Capture Location</div>
+          <div style="color:var(--muted);font-size:0.75rem">GPS coordinates required</div>
+        </div>
+      </div>
+      <div class="step" id="step-confirm">
+        <div class="step-dot">2</div>
+        <div>
+          <div style="font-weight:500;font-size:0.875rem">Confirm Attendance</div>
+          <div style="color:var(--muted);font-size:0.75rem">Submit your record</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location status -->
+    <div class="location-status pending" id="loc-status">
+      <div class="loc-dot pulse"></div>
+      <span>Requesting location access…</span>
+    </div>
+
+    <!-- Optional selfie -->
+    <div class="selfie-section" id="selfie-section">
+      <div class="selfie-label">
+        📸 Selfie Verification
+        <span class="optional-tag">Optional</span>
+      </div>
+      <div id="camera-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <img id="selfie-preview" alt="Selfie" />
+        <div class="camera-placeholder" id="cam-placeholder">
+          <div class="cam-icon">📷</div>
+          <div>No selfie taken</div>
+        </div>
+      </div>
+      <div class="cam-btns">
+        <button class="btn btn-sm" onclick="startCamera()" id="btn-camera">Open Camera</button>
+        <button class="btn btn-sm" onclick="capturePhoto()" id="btn-capture" style="display:none">📸 Capture</button>
+        <button class="btn btn-sm" onclick="clearPhoto()" id="btn-clear" style="display:none">✕ Clear</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary-in" id="submit-btn" onclick="submitAttendance()" disabled>
+      <span id="btn-text">Waiting for location…</span>
+    </button>
+  </div>
+
+  <!-- Success -->
+  <div id="state-success">
+    <div class="success-ring">✓</div>
+    <div class="time-display" id="success-time">—</div>
+    <div class="date-display" id="success-date">—</div>
+    <h2 class="success-title" id="success-title">Checked In!</h2>
+    <p class="success-detail" id="success-msg">Your attendance has been recorded.</p>
+    <div id="geofence-result"></div>
+    <div class="divider"></div>
+    <p style="color:var(--muted);font-size:0.8rem">You can close this window now. 👋</p>
+  </div>
+</div>
+
+<script>
+  let token = null;
+  let locationData = null;
+  let selfieData = null;
+  let stream = null;
+
+  // ─── Init ───
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    token = params.get('token');
+    if (!token) return showError('No attendance token found in the link.');
+    validateToken();
+    setInterval(updateClock, 1000);
+  });
+
+  function updateClock() {
+    const el = document.getElementById('live-time');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  // ─── Token validation ───
+  async function validateToken() {
+    try {
+      const res = await fetch(`/api/token/validate?token=${token}`);
+      const data = await res.json();
+      if (!data.valid) return showError(data.error);
+      showForm(data);
+    } catch (e) {
+      showError('Network error. Please check your connection.');
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('state-loading').style.display = 'none';
+    document.getElementById('state-error').style.display = 'block';
+    document.getElementById('error-msg').textContent = msg;
+  }
+
+  function showForm(data) {
+    document.getElementById('state-loading').style.display = 'none';
+    document.getElementById('state-form').style.display = 'block';
+
+    document.getElementById('emp-name').textContent = data.name.split(' ')[0];
+    document.getElementById('emp-detail').textContent = `${data.department || 'Team'} · ${data.employee_id}`;
+    document.getElementById('display-id').textContent = data.employee_id;
+    updateClock();
+
+    const isIn = data.action === 'in';
+    const badge = document.getElementById('action-badge');
+    badge.className = `action-badge ${data.action}`;
+    document.getElementById('action-icon').textContent = isIn ? '✅' : '🚪';
+    document.getElementById('action-label').textContent = isIn ? 'Check In' : 'Check Out';
+
+    const btn = document.getElementById('submit-btn');
+    btn.className = `btn ${isIn ? 'btn-primary-in' : 'btn-primary-out'}`;
+
+    // Show selfie section
+    document.getElementById('selfie-section').style.display = 'block';
+
+    // Get location
+    requestLocation();
+  }
+
+  // ─── Location ───
+  function requestLocation() {
+    if (!navigator.geolocation) {
+      updateLocStatus('error', '❌ Geolocation not supported by your browser.');
+      enableSubmit(true, '⚠️ Submit Without Location');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        locationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        updateLocStatus('success', `✓ Location captured (±${Math.round(pos.coords.accuracy)}m accuracy)`);
+        document.getElementById('step-loc').className = 'step done';
+        document.getElementById('step-loc').querySelector('.step-dot').textContent = '✓';
+        document.getElementById('step-confirm').className = 'step active';
+        enableSubmit(false, '✅ Mark Attendance');
+      },
+      (err) => {
+        const msgs = { 1: 'Location permission denied. Please enable it in browser settings.', 2: 'Location unavailable.', 3: 'Location request timed out.' };
+        updateLocStatus('error', `❌ ${msgs[err.code] || 'Could not get location.'}`);
+        enableSubmit(true, '⚠️ Submit Without Location');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  function updateLocStatus(type, text) {
+    const el = document.getElementById('loc-status');
+    el.className = `location-status ${type}`;
+    const dot = el.querySelector('.loc-dot');
+    dot.className = 'loc-dot' + (type === 'pending' ? ' pulse' : '');
+    el.querySelector('span').textContent = text;
+  }
+
+  function enableSubmit(warn, label) {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = false;
+    document.getElementById('btn-text').textContent = label;
+    if (warn) btn.style.opacity = '0.8';
+  }
+
+  // ─── Camera ───
+  async function startCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      document.getElementById('cam-placeholder').style.display = 'none';
+      document.getElementById('btn-camera').style.display = 'none';
+      document.getElementById('btn-capture').style.display = 'flex';
+    } catch (e) {
+      alert('Could not access camera: ' + e.message);
+    }
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    selfieData = canvas.toDataURL('image/jpeg', 0.7);
+
+    const preview = document.getElementById('selfie-preview');
+    preview.src = selfieData;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+
+    document.getElementById('btn-capture').style.display = 'none';
+    document.getElementById('btn-clear').style.display = 'flex';
+  }
+
+  function clearPhoto() {
+    selfieData = null;
+    document.getElementById('selfie-preview').style.display = 'none';
+    document.getElementById('cam-placeholder').style.display = 'flex';
+    document.getElementById('btn-camera').style.display = 'flex';
+    document.getElementById('btn-clear').style.display = 'none';
+  }
+
+  // ─── Submit ───
+  async function submitAttendance() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    document.getElementById('btn-text').textContent = 'Submitting…';
+
+    const deviceInfo = `${navigator.userAgent}`;
+
+    try {
+      const res = await fetch('/api/attendance/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, latitude: locationData?.latitude, longitude: locationData?.longitude, deviceInfo, selfieUrl: selfieData })
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      showSuccess(data);
+    } catch (e) {
+      btn.disabled = false;
+      document.getElementById('btn-text').textContent = '✅ Mark Attendance';
+      alert('Error: ' + e.message);
+    }
+  }
+
+  function showSuccess(data) {
+    document.getElementById('state-form').style.display = 'none';
+    const s = document.getElementById('state-success');
+    s.style.display = 'block';
+
+    const now = new Date(data.timestamp);
+    document.getElementById('success-time').textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('success-date').textContent = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('success-title').textContent = data.action === 'in' ? '🎉 Checked In!' : '👋 Checked Out!';
+    document.getElementById('success-msg').textContent = `Hi ${data.name}, your ${data.action === 'in' ? 'arrival' : 'departure'} has been recorded successfully.`;
+
+    if (data.geofenceMessage) {
+      const pill = document.createElement('div');
+      pill.className = `geofence-pill ${data.withinGeofence ? 'ok' : 'warn'}`;
+      pill.innerHTML = `${data.withinGeofence ? '📍' : '⚠️'} ${data.geofenceMessage}`;
+      document.getElementById('geofence-result').appendChild(pill);
+    }
+  }
+</script>
+</body>
+</html>
