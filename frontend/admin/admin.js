@@ -8,11 +8,15 @@ function jsonHeaders() {
 async function doLogin() {
   const pw = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-submit-btn');
   errEl.textContent = '';
   if (!pw) { errEl.textContent = 'Password required'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
   try {
     const res = await fetch('/api/admin/login', {
-      method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
+      method: 'POST', headers: jsonHeaders(), credentials: 'include',
       body: JSON.stringify({ password: pw })
     });
     if (res.ok) {
@@ -20,17 +24,20 @@ async function doLogin() {
       document.getElementById('login-password').value = '';
       initDashboard();
     } else {
-      const d = await res.json();
-      errEl.textContent = d.error || 'Login failed';
+      const d = await res.json().catch(() => ({}));
+      errEl.textContent = d.error || `Login failed (HTTP ${res.status})`;
       document.getElementById('login-password').value = '';
     }
   } catch (e) {
-    errEl.textContent = 'Network error — is the server running?';
+    errEl.textContent = `Network error: ${e.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
   }
 }
 
 async function doLogout() {
-  await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+  await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
   document.getElementById('login-overlay').style.display = 'flex';
 }
 
@@ -62,7 +69,7 @@ async function loadDashboard() {
   const date = dateEl.value;
 
   try {
-    const res = await fetch(`${API}/api/admin/summary?date=${date}`, { credentials: 'same-origin' });
+    const res = await fetch(`${API}/api/admin/summary?date=${date}`, { credentials: 'include' });
     const data = await res.json();
     const { stats, employees } = data;
 
@@ -121,7 +128,7 @@ async function loadLogs() {
   if (!dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
 
   try {
-    const res = await fetch(`${API}/api/admin/attendance?date=${dateEl.value}`, { credentials: 'same-origin' });
+    const res = await fetch(`${API}/api/admin/attendance?date=${dateEl.value}`, { credentials: 'include' });
     const rows = await res.json();
     const tbody = document.getElementById('logs-table');
 
@@ -172,7 +179,7 @@ function exportCSV() {
 // ─── EMPLOYEES ───
 async function loadEmployees() {
   try {
-    const res = await fetch(`${API}/api/admin/employees`, { credentials: 'same-origin' });
+    const res = await fetch(`${API}/api/admin/employees`, { credentials: 'include' });
     const emps = await res.json();
     const tbody = document.getElementById('emp-table');
     tbody.innerHTML = emps.map(e => `<tr>
@@ -198,7 +205,7 @@ async function addEmployee() {
   if (!body.name || !body.employee_id || !body.phone) return toast('Name, ID and Phone are required', 'error');
 
   try {
-    const res = await fetch(`${API}/api/admin/employees`, { method: 'POST', headers: jsonHeaders(), credentials: 'same-origin', body: JSON.stringify(body) });
+    const res = await fetch(`${API}/api/admin/employees`, { method: 'POST', headers: jsonHeaders(), credentials: 'include', body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     toast(`✅ ${data.name} added!`);
@@ -212,7 +219,7 @@ async function addEmployee() {
 // ─── SETTINGS ───
 async function loadSettings() {
   try {
-    const res = await fetch(`${API}/api/admin/office`, { credentials: 'same-origin' });
+    const res = await fetch(`${API}/api/admin/office`, { credentials: 'include' });
     const office = await res.json();
     if (office) {
       document.getElementById('office-name').value = office.name || '';
@@ -233,7 +240,7 @@ async function saveOffice() {
   };
   if (!body.latitude || !body.longitude) return toast('Latitude and Longitude required', 'error');
   try {
-    const res = await fetch(`${API}/api/admin/office`, { method: 'PUT', headers: jsonHeaders(), credentials: 'same-origin', body: JSON.stringify(body) });
+    const res = await fetch(`${API}/api/admin/office`, { method: 'PUT', headers: jsonHeaders(), credentials: 'include', body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     toast('✅ Office location saved!');
@@ -342,7 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Check for existing valid session ──
   try {
-    const res = await fetch('/api/admin/me', { credentials: 'same-origin' });
+    const res = await fetch('/api/admin/me', { credentials: 'include' });
     const d = await res.json();
     if (d.authenticated) {
       document.getElementById('login-overlay').style.display = 'none';

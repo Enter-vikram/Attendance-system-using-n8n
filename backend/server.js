@@ -101,10 +101,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,                           // never readable by JS
-    secure: cookieSecure,                     // true only when HTTPS is confirmed
-    sameSite: 'lax',
-    maxAge: 8 * 60 * 60 * 1000,              // 8-hour session
+    httpOnly: true,
+    secure: cookieSecure,
+    sameSite: cookieSecure ? 'none' : 'lax',  // 'none' required for cross-origin on HTTPS
+    maxAge: 8 * 60 * 60 * 1000,
   },
 }));
 

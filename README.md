@@ -20,11 +20,11 @@ docker compose up -d
 ### Step 3 — Open the Apps
 | Service | URL | Credentials |
 |---|---|---|
-| 🖥️ Admin Dashboard | http://localhost:4000/admin | — |
+| 🖥️ Admin Dashboard | http://localhost:4000/admin | `Admin@1234` |
 | ✅ Check-in Page | http://localhost:4000/checkin?token=TEST | — |
-| ⚙️ n8n Automation | http://localhost:5678 | admin / n8npassword123 |
+| ⚙️ n8n Automation | http://localhost:5678 | admin / see `.env` `N8N_BASIC_AUTH_PASSWORD` |
 
-> **Test immediately** → Go to Admin → Test Simulator tab → enter a registered phone → click Send
+> **Test immediately** → Go to Admin (password: `Admin@1234`) → Test Simulator tab → enter a registered phone → click Send
 
 ---
 
@@ -34,6 +34,7 @@ docker compose up -d
 attendance-system/
 ├── docker-compose.yml          # All services in one command
 ├── .env.example                # Copy to .env and configure
+├── .env                        # Your local secrets (never commit)
 │
 ├── backend/
 │   ├── server.js               # Express API (all endpoints)
@@ -42,7 +43,9 @@ attendance-system/
 │
 ├── frontend/
 │   ├── checkin/index.html      # Employee check-in page (GPS + selfie)
-│   └── admin/index.html        # Admin dashboard
+│   └── admin/
+│       ├── index.html          # Admin dashboard
+│       └── admin.js            # All admin JS (CSP-compliant, no inline scripts)
 │
 └── n8n/
     └── attendance-workflow.json  # Import this into n8n
@@ -76,7 +79,7 @@ Admin sees real-time data in dashboard
 
 ## 🔧 Environment Variables
 
-Edit `.env`:
+Copy `.env.example` to `.env` and fill in your values:
 
 ```env
 # Public URL of your server (used in WhatsApp links)
@@ -84,10 +87,19 @@ Edit `.env`:
 # Production: https://your-domain.com
 BASE_URL=http://localhost:4000
 
+# Admin dashboard password
+ADMIN_PASSWORD=Admin@1234
+
+# Set to true when serving over HTTPS
+COOKIE_SECURE=false
+
 # WhatsApp Cloud API (from Meta Developer Portal)
 WHATSAPP_TOKEN=your_system_user_token
 WHATSAPP_PHONE_ID=your_phone_number_id
+WHATSAPP_VERIFY_TOKEN=your_verify_token
 ```
+
+> **Production deployment:** Set `BASE_URL` to your real domain, `COOKIE_SECURE=true`, and update `ADMIN_PASSWORD` to something strong.
 
 ---
 
