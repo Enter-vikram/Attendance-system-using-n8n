@@ -137,7 +137,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// WhatsApp webhook verification\nconst query = $input.first().json.query;\nconst VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'attendance_verify_2024';\n\nif (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === VERIFY_TOKEN) {\n  return [{ json: { challenge: query['hub.challenge'], valid: true } }];\n}\nreturn [{ json: { valid: false } }];"
+        "jsCode": "// WhatsApp webhook verification\nconst query = $input.first().json.query;\nconst VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;\nif (!VERIFY_TOKEN) throw new Error('WHATSAPP_VERIFY_TOKEN env var is not set in n8n');\n\nif (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === VERIFY_TOKEN) {\n  return [{ json: { challenge: query['hub.challenge'], valid: true } }];\n}\nreturn [{ json: { valid: false } }];"
       },
       "id": "verify-token",
       "name": "Verify Token",

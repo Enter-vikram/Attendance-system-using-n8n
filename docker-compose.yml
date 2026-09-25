@@ -4,13 +4,13 @@ services:
     container_name: attendance-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: attendance
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: attendance123
+      POSTGRES_DB: ${DB_NAME:-attendance}
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d attendance"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d ${DB_NAME:-attendance}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,10 +27,14 @@ services:
       PORT: 4000
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: attendance
-      DB_USER: admin
-      DB_PASSWORD: attendance123
+      DB_NAME: ${DB_NAME:-attendance}
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      NODE_ENV: ${NODE_ENV:-production}
       BASE_URL: ${BASE_URL:-http://localhost:4000}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
       - "4000:4000"
     depends_on:
@@ -48,12 +52,13 @@ services:
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
-      GENERIC_TIMEZONE: Asia/Kolkata
+      GENERIC_TIMEZONE: ${TIMEZONE:-Asia/Kolkata}
       N8N_BASIC_AUTH_ACTIVE: "true"
-      N8N_BASIC_AUTH_USER: admin
-      N8N_BASIC_AUTH_PASSWORD: n8npassword123
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD is required}
       WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-YOUR_WHATSAPP_TOKEN}
       WHATSAPP_PHONE_ID: ${WHATSAPP_PHONE_ID:-YOUR_PHONE_NUMBER_ID}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:?WHATSAPP_VERIFY_TOKEN is required}
       ATTENDANCE_BACKEND_URL: http://backend:4000
     ports:
       - "5678:5678"

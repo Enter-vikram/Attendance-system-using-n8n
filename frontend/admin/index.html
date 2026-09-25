@@ -445,6 +445,12 @@ tbody tr:hover { background: rgba(255,255,255,0.015); }
   <a class="nav-item" href="#" onclick="showSection('test')">
     <span class="nav-icon">🧪</span> Test Simulator
   </a>
+
+  <div style="margin-top:auto;padding-top:1rem">
+    <a class="nav-item" href="#" onclick="doLogout()" style="color:var(--red)">
+      <span class="nav-icon">🚪</span> Logout
+    </a>
+  </div>
 </aside>
 
 <!-- MAIN -->
@@ -703,11 +709,65 @@ tbody tr:hover { background: rgba(255,255,255,0.015); }
 
 </main>
 
+<!-- Login overlay — shown until session is authenticated -->
+<div id="login-overlay" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border-bright);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:360px;box-shadow:0 25px 60px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:2rem">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.2rem">⚡</div>
+      <div>
+        <div style="font-family:var(--title);font-weight:700;font-size:1rem">SmartAttend</div>
+        <div style="font-size:0.75rem;color:var(--muted2)">Admin Login</div>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:0.8rem;color:var(--muted2);display:block;margin-bottom:0.4rem">Password</label>
+      <input type="password" id="login-password" class="form-input" placeholder="Enter admin password"
+        onkeydown="if(event.key==='Enter')doLogin()" style="width:100%" />
+    </div>
+    <div id="login-error" style="color:var(--red);font-size:0.8rem;margin-bottom:0.75rem;min-height:1.2em"></div>
+    <button class="btn btn-primary" style="width:100%;padding:0.75rem" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
 const API = '';
+
+function jsonHeaders() {
+  return { 'Content-Type': 'application/json' };
+}
+
+// ─── LOGIN / LOGOUT ───
+async function doLogin() {
+  const pw = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!pw) { errEl.textContent = 'Password required'; return; }
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST', headers: jsonHeaders(), credentials: 'same-origin',
+      body: JSON.stringify({ password: pw })
+    });
+    if (res.ok) {
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('login-password').value = '';
+      initDashboard();
+    } else {
+      const d = await res.json();
+      errEl.textContent = d.error || 'Login failed';
+      document.getElementById('login-password').value = '';
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error — is the server running?';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+  document.getElementById('login-overlay').style.display = 'flex';
+}
 
 // ─── SECTION ROUTING ───
 function showSection(name) {
@@ -737,7 +797,7 @@ async function loadDashboard() {
   const date = dateEl.value;
 
   try {
-    const res = await fetch(`${API}/api/admin/summary?date=${date}`);
+    const res = await fetch(`${API}/api/admin/summary?date=${date}`, { credentials: 'same-origin' });
     const data = await res.json();
     const { stats, employees } = data;
 
@@ -793,7 +853,7 @@ async function loadLogs() {
   if (!dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
 
   try {
-    const res = await fetch(`${API}/api/admin/attendance?date=${dateEl.value}`);
+    const res = await fetch(`${API}/api/admin/attendance?date=${dateEl.value}`, { credentials: 'same-origin' });
     const rows = await res.json();
     const tbody = document.getElementById('logs-table');
 
@@ -844,7 +904,7 @@ function exportCSV() {
 // ─── EMPLOYEES ───
 async function loadEmployees() {
   try {
-    const res = await fetch(`${API}/api/admin/employees`);
+    const res = await fetch(`${API}/api/admin/employees`, { credentials: 'same-origin' });
     const emps = await res.json();
     const tbody = document.getElementById('emp-table');
     tbody.innerHTML = emps.map(e => `<tr>
@@ -870,7 +930,7 @@ async function addEmployee() {
   if (!body.name || !body.employee_id || !body.phone) return toast('Name, ID and Phone are required', 'error');
 
   try {
-    const res = await fetch(`${API}/api/admin/employees`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch(`${API}/api/admin/employees`, { method: 'POST', headers: jsonHeaders(), credentials: 'same-origin', body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     toast(`✅ ${data.name} added!`);
@@ -884,7 +944,7 @@ async function addEmployee() {
 // ─── SETTINGS ───
 async function loadSettings() {
   try {
-    const res = await fetch(`${API}/api/admin/office`);
+    const res = await fetch(`${API}/api/admin/office`, { credentials: 'same-origin' });
     const office = await res.json();
     if (office) {
       document.getElementById('office-name').value = office.name || '';
@@ -905,7 +965,7 @@ async function saveOffice() {
   };
   if (!body.latitude || !body.longitude) return toast('Latitude and Longitude required', 'error');
   try {
-    const res = await fetch(`${API}/api/admin/office`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch(`${API}/api/admin/office`, { method: 'PUT', headers: jsonHeaders(), credentials: 'same-origin', body: JSON.stringify(body) });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     toast('✅ Office location saved!');
@@ -962,10 +1022,22 @@ async function simulate() {
 }
 
 // ─── INIT ───
-document.addEventListener('DOMContentLoaded', () => {
+function initDashboard() {
   document.getElementById('dash-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
   loadDashboard();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check for existing valid session — skip login if already authenticated
+  try {
+    const res = await fetch('/api/admin/me', { credentials: 'same-origin' });
+    const d = await res.json();
+    if (d.authenticated) {
+      document.getElementById('login-overlay').style.display = 'none';
+      initDashboard();
+    }
+  } catch (_) { /* login overlay stays visible */ }
 });
 </script>
 </body>
