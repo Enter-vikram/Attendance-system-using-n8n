@@ -87,9 +87,9 @@ app.use(cors({
 app.use(morgan('combined'));
 app.use(express.json({ limit: '2mb' }));
 
-// COOKIE_SECURE=true only when served over HTTPS (set explicitly in production)
-// Decoupled from NODE_ENV so local HTTP testing works even with NODE_ENV=production
-const cookieSecure = process.env.COOKIE_SECURE === 'true';
+// Trust Railway's (and any other) reverse proxy so req.secure is set correctly
+app.set('trust proxy', 1);
+
 app.use(session({
   store: new pgSession({
     pool,
@@ -100,10 +100,11 @@ app.use(session({
   name: 'attend.sid',
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
     httpOnly: true,
-    secure: cookieSecure,
-    sameSite: cookieSecure ? 'none' : 'lax',  // 'none' required for cross-origin on HTTPS
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000,
   },
 }));
